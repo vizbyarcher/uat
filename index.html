@@ -76,7 +76,7 @@
     };
     
     // var json = JSON.parse(resp.response);
-    fetch('../src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
+    fetch('https://github.com/vizbyarcher/uat/raw/master/src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
         .then(res => res.json())
         .then((json) => {
             var canvasLayer = L.gridLayer.geoJson(json, options1).addTo(map);
