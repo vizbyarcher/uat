@@ -15,7 +15,7 @@
    crossorigin=""></script>
 
    <script src="https://unpkg.com/geojson-vt@3.2.0/geojson-vt.js"></script> 
-   <script src="https://raw.githubusercontent.com/vizbyarcher/uat/master/src/GeojsonExtend.js"></script>
+   <script src="src/GeojsonExtend.js"></script>
 
     <style>
     body { margin:0; padding:0; }
@@ -75,7 +75,7 @@
         }
     };
     
-    // var json = JSON.parse(resp.response);
+    // raw.githubusercontent.com/<me>/<repo>/master/<file>
     fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
         .then(res => res.json())
         .then((json) => {
