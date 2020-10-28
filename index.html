@@ -175,17 +175,37 @@
     map.setMaxBounds(bounds);
     map.setZoom(6);
 
-    var options1 = {
+    var options0 = {
         minZoom: 6,
+        maxZoom: 6,  // max zoom to preserve detail on; can't be higher than 24
+        tolerance: 30, // simplification tolerance (higher means simpler)
+        extent: 4096, // tile extent (both width and height)
+        buffer: 64,   // tile buffer on each side
+        debug: 1,     // logging level (0 to disable, 1 or 2)
+        lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
+        promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
+        generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
+        indexMaxZoom: 1,       // max zoom in the initial tile index
+        indexMaxPoints: 100000, // max number of points per tile in the index
+        style: {
+            fillColor: '#ffffff',
+            color: '#F2FF00',
+            opacity: 0.5,
+            weight: 2,
+            fillOpacity:0.5
+        }
+    };
+    var options1 = {
+        minZoom: 7,
         maxZoom: 18,  // max zoom to preserve detail on; can't be higher than 24
         tolerance: 30, // simplification tolerance (higher means simpler)
         extent: 4096, // tile extent (both width and height)
         buffer: 64,   // tile buffer on each side
-        debug: 2,     // logging level (0 to disable, 1 or 2)
+        debug: 1,     // logging level (0 to disable, 1 or 2)
         lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
         promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
         generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
-        indexMaxZoom: 6,       // max zoom in the initial tile index
+        indexMaxZoom: 1,       // max zoom in the initial tile index
         indexMaxPoints: 100000, // max number of points per tile in the index
         style: {
             fillColor: '#ffffff',
@@ -197,6 +217,12 @@
     };
     
     // raw.githubusercontent.com/<me>/<repo>/master/<file>
+    fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaJud_simplified8.5_EPSG4326.geojson')
+        .then(res => res.json())
+        .then((json) => {
+            var canvasLayer = L.gridLayer.geoJson(json, options0).addTo(map);
+    }).catch(err => console.error(err));
+
     fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
         .then(res => res.json())
         .then((json) => {
