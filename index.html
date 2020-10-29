@@ -26,6 +26,9 @@
 <body>
 
     <style>
+        #map {
+            background: rgb(255, 255, 255);
+        }
     </style>
     
     <div id="map"></div>
@@ -174,6 +177,7 @@
     map.fitBounds(bounds);
     map.setMaxBounds(bounds);
     map.setZoom(6);
+    
 
     var options0 = {
         minZoom: 6,
@@ -189,16 +193,57 @@
         indexMaxPoints: 100000, // max number of points per tile in the index
         style: {
             fillColor: '#ffffff',
-            color: '#F2FF00',
-            opacity: 0.5,
-            weight: 2,
-            fillOpacity:0.5
+            color: 'darkgray',
+            opacity: 1,
+            weight: 0.3,
+            fillOpacity: 1,
         }
     };
+    
+
+    function style(feature) {
+        return {
+            fillColor: feature.properties.color,
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            // dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+    function highlightFeature(e) {
+        var layer = e.target;
+
+        layer.setStyle({
+            weight: 5,
+            color: '#666',
+            dashArray: '',
+            fillOpacity: 0.7
+        });
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            layer.bringToFront();
+        };
+        info.update(layer.feature.properties);
+    }
+    function resetHighlight(e) {
+        uat.resetStyle(e.target);
+        info.update();
+    }
+    function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+    }
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            // click: zoomToFeature,
+        });
+    }
+
     var options1 = {
         minZoom: 7,
         maxZoom: 18,  // max zoom to preserve detail on; can't be higher than 24
-        tolerance: 30, // simplification tolerance (higher means simpler)
+        tolerance: 3, // simplification tolerance (higher means simpler)
         extent: 4096, // tile extent (both width and height)
         buffer: 64,   // tile buffer on each side
         debug: 1,     // logging level (0 to disable, 1 or 2)
@@ -208,12 +253,15 @@
         indexMaxZoom: 1,       // max zoom in the initial tile index
         indexMaxPoints: 100000, // max number of points per tile in the index
         style: {
-            fillColor: '#ffffff',
-            color: '#F2FF00',
-            opacity: 0.5,
-            weight: 2,
-            fillOpacity:0.5
-        }
+                function(feature) {
+                    return {fillColor: feature.properties.color};
+                },
+                color: 'darkgray',
+                opacity: 1,
+                weight: 0.3,
+                fillOpacity: 1,
+        },
+        onEachFeature: onEachFeature,
     };
     
     // raw.githubusercontent.com/<me>/<repo>/master/<file>
@@ -226,10 +274,13 @@
     fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
         .then(res => res.json())
         .then((json) => {
-            var canvasLayer = L.gridLayer.geoJson(json, options1).addTo(map);
+            var uat = L.gridLayer.geoJson(json, options1).addTo(map);
+            uat.bindPopup(function (layer) {
+                return L.Util.template('<p><strong>{DENLOC_UTF8}</strong> <br />Județul: {JUD_STR}<br />SIRUTA: {SIRUTA_NUM}</p>', layer.feature.properties);
+            });
     }).catch(err => console.error(err));
 
-
+    
     // https://leafletjs.com/examples/choropleth/
     
 
