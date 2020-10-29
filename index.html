@@ -15,6 +15,7 @@
    crossorigin=""></script>
 
    <script src="https://unpkg.com/geojson-vt@3.2.0/geojson-vt.js"></script> 
+   <script type="text/javascript"  src="https://unpkg.com/leaflet.vectorgrid@1.2.0"></script>
 
     <style>
     body { margin:0; padding:0; }
@@ -35,127 +36,7 @@
 
 
 <script>
-    L.GridLayer.GeoJSON = L.GridLayer.extend({
-        options: {
-            async: false
-        },
-
-        initialize: function (geojson, options) {
-            L.setOptions(this, options);
-            L.GridLayer.prototype.initialize.call(this, options);
-            this.tileIndex = geojsonvt(geojson, this.options);
-        },
-
-
-        createTile: function (coords) {
-            // create a <canvas> element for drawing
-            var tile = L.DomUtil.create('canvas', 'leaflet-tile');
-            // setup tile width and height according to the options
-            var size = this.getTileSize();
-            tile.width = size.x;
-            tile.height = size.y;
-            // get a canvas context and draw something on it using coords.x, coords.y and coords.z
-            var ctx = tile.getContext('2d');
-            // return the tile so it can be rendered on screen
-            var tileInfo = this.tileIndex.getTile(coords.z, coords.x, coords.y);
-            var features = tileInfo ? tileInfo.features : [];
-            for (var i = 0; i < features.length; i++) {
-                var feature = features[i];
-                this.drawFeature(ctx, feature);
-            }
-            return tile;
-        },
-
-
-        drawFeature: function (ctx, feature) {
-            var typeChanged = type !== feature.type,
-                type = feature.type;
-            ctx.beginPath();
-            if (this.options.style) this.setStyle(ctx, this.options.style);
-            if (type === 2 || type === 3) {
-                for (var j = 0; j < feature.geometry.length; j++) {
-                    var ring = feature.geometry[j];
-                    for (var k = 0; k < ring.length; k++) {
-                        var p = ring[k];
-                        if (k) ctx.lineTo(p[0] / 16.0, p[1] / 16.0);
-                        else ctx.moveTo(p[0] / 16.0, p[1] / 16.0);
-                    }
-                }
-            } else if (type === 1) {
-                for (var j = 0; j < feature.geometry.length; j++) {
-                    var p = feature.geometry[j];
-                    ctx.arc(p[0] / 16.0, p[1] / 16.0, 2, 0, Math.PI * 2, true);
-                }
-            }
-            if (type === 3) ctx.fill(this.options.style.fillRule || 'evenodd');
-
-            ctx.stroke();
-        },
-
-        setStyle: function (ctx, style) {
-            var stroke = style.stroke || true;
-            if (stroke) {
-                ctx.lineWidth = style.weight || 5;
-                var color = this.setOpacity(style.color, style.opacity);
-                ctx.strokeStyle = color;
-
-            } else {
-                ctx.lineWidth = 0;
-                ctx.strokeStyle = {};
-            }
-            var fill = style.fill || true;
-            if (fill) {
-                ctx.fillStyle = style.fillColor || '#03f';
-                var color = this.setOpacity(style.fillColor, style.fillOpacity);
-                ctx.fillStyle = color;
-            } else {
-                ctx.fillStyle = {};
-            }
-        },
-
-        setOpacity: function (color, opacity) {
-            if (opacity) {
-                var color = color || '#03f';
-                if (color.iscolorHex()) {
-                    var colorRgb = color.colorRgb();
-                    return "rgba(" + colorRgb[0] + "," + colorRgb[1] + "," + colorRgb[2] + "," + opacity + ")";
-                } else {
-                    return color;
-                }
-            } else {
-                return color;
-            }
-
-        }
-    })
-
-    L.gridLayer.geoJson = function (geojson, options) {
-        return new L.GridLayer.GeoJSON(geojson, options);
-    };
-
-    String.prototype.iscolorHex = function () {
-        var sColor = this.toLowerCase();
-        var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
-        return reg.test(sColor);
-    }
-
-
-    String.prototype.colorRgb = function () {
-        var sColor = this.toLowerCase();
-        if (sColor.length === 4) {
-            var sColorNew = "#";
-            for (var i = 1; i < 4; i += 1) {
-                sColorNew += sColor.slice(i, i + 1).concat(sColor.slice(i, i + 1));
-            }
-            sColor = sColorNew;
-        }
-        //处理六位的颜色值  
-        var sColorChange = [];
-        for (var i = 1; i < 7; i += 2) {
-            sColorChange.push(parseInt("0x" + sColor.slice(i, i + 2)));
-        }
-        return sColorChange;
-    };  
+    
 
     var mapExtent = [19.32120412060868, 42.67723088757718, 30.650064477337224, 49.20946062792045];
     var bounds = new L.LatLngBounds(
@@ -170,116 +51,147 @@
         // tileSize: 512,
         // zoomOffset: -1,
         // loadingControl: true,
-        fadeAnimation: false,
-        detectRetina: true,
+        // fadeAnimation: false,
+        // detectRetina: true,
         });
 
     map.fitBounds(bounds);
     map.setMaxBounds(bounds);
     map.setZoom(6);
     
-
-    var options0 = {
-        minZoom: 6,
-        maxZoom: 6,  // max zoom to preserve detail on; can't be higher than 24
-        tolerance: 30, // simplification tolerance (higher means simpler)
-        extent: 4096, // tile extent (both width and height)
-        buffer: 64,   // tile buffer on each side
-        debug: 1,     // logging level (0 to disable, 1 or 2)
-        lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
-        promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
-        generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
-        indexMaxZoom: 1,       // max zoom in the initial tile index
-        indexMaxPoints: 100000, // max number of points per tile in the index
-        style: {
-            fillColor: '#ffffff',
-            color: 'darkgray',
-            opacity: 1,
-            weight: 0.3,
-            fillOpacity: 1,
+    var jud;
+    var highlightJud;
+    var clearHighlightJud = function() {
+        if (highlightJud) {
+            jud.resetFeatureStyle(highlightJud);
         }
+        highlightJud = null;
     };
-    
-
-    function style(feature) {
-        return {
-            fillColor: feature.properties.color,
-            weight: 1,
-            opacity: 1,
-            color: 'white',
-            // dashArray: '3',
-            fillOpacity: 0.7
-        };
-    }
-    function highlightFeature(e) {
-        var layer = e.target;
-
-        layer.setStyle({
-            weight: 5,
-            color: '#666',
-            dashArray: '',
-            fillOpacity: 0.7
-        });
-        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-            layer.bringToFront();
-        };
-        info.update(layer.feature.properties);
-    }
-    function resetHighlight(e) {
-        uat.resetStyle(e.target);
-        info.update();
-    }
-    function zoomToFeature(e) {
-        map.fitBounds(e.target.getBounds());
-    }
-    function onEachFeature(feature, layer) {
-        layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            // click: zoomToFeature,
-        });
-    }
-
-    var options1 = {
-        minZoom: 7,
-        maxZoom: 18,  // max zoom to preserve detail on; can't be higher than 24
-        tolerance: 3, // simplification tolerance (higher means simpler)
-        extent: 4096, // tile extent (both width and height)
-        buffer: 64,   // tile buffer on each side
-        debug: 1,     // logging level (0 to disable, 1 or 2)
-        lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
-        promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
-        generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
-        indexMaxZoom: 1,       // max zoom in the initial tile index
-        indexMaxPoints: 100000, // max number of points per tile in the index
-        style: {
-                function(feature) {
-                    return {fillColor: feature.properties.color};
-                },
-                color: 'darkgray',
-                opacity: 1,
-                weight: 0.3,
-                fillOpacity: 1,
-        },
-        onEachFeature: onEachFeature,
-    };
-    
-    // raw.githubusercontent.com/<me>/<repo>/master/<file>
+    // Github files link format: raw.githubusercontent.com/<user>/<repo>/<branch>/<dir>/<file>
     fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaJud_simplified8.5_EPSG4326.geojson')
         .then(res => res.json())
         .then((json) => {
-            var canvasLayer = L.gridLayer.geoJson(json, options0).addTo(map);
+            
+            jud = L.vectorGrid.slicer(json, {
+                minZoom: 6,
+                maxZoom: 7,  // max zoom to preserve detail on; can't be higher than 24
+                // zoomDelta: 0.5,
+                // zoomSnap: 0.5,
+                tolerance: 3, // simplification tolerance (higher means simpler)
+                extent: 4096, // tile extent (both width and height)
+                buffer: 64,   // tile buffer on each side
+                debug: 0,     // logging level (0 to disable, 1 or 2)
+                lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
+                promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
+                generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
+                indexMaxZoom: 1,       // max zoom in the initial tile index
+                indexMaxPoints: 10000, // max number of points per tile in the index
+
+                rendererFactory: L.svg.tile,
+                vectorTileLayerStyles: {
+                    sliced: function(properties, zoom) {
+                        return {
+                            fillColor: properties.color,
+                            fill: true,
+                            color: 'white',
+                            opacity: 0.1,
+                            weight: 0.5,
+                            fillOpacity: 1,
+                        }
+                    }
+                },
+                interactive: true,
+                getFeatureId: function(f) {
+                    return f.properties.Id;
+                }
+            
+		    })
+            .on('click', function(e) {
+                var properties = e.layer.properties;
+                var popup = L.popup()
+                    .setContent('<p><strong>'+properties.name+'</strong></p>')
+                    .setLatLng(e.latlng)
+                    .openOn(map);
+                clearHighlightJud();              
+                highlightJud = properties.Id;
+                var style = {
+                    fillColor: properties.color,
+                    fill: true,
+                    color: 'black',
+                    opacity: 1,
+                    weight: 1,
+                    fillOpacity: 0.85,
+                };
+                jud.setFeatureStyle(properties.Id, style);
+            }).addTo(map);
     }).catch(err => console.error(err));
 
+    var uat;
+    var highlightUat;
+    var clearHighlightUat = function() {
+        if (highlightUat) {
+            uat.resetFeatureStyle(highlightUat);
+        }
+        highlightUat = null;
+    };
+    // Github files link format: raw.githubusercontent.com/<user>/<repo>/<branch>/<dir>/<file>
     fetch('https://raw.githubusercontent.com/vizbyarcher/uat/master/src/RomaniaUAT_simplified10_EPSG4326_rounded.geojson')
         .then(res => res.json())
         .then((json) => {
-            var uat = L.gridLayer.geoJson(json, options1).addTo(map);
-            uat.bindPopup(function (layer) {
-                return L.Util.template('<p><strong>{DENLOC_UTF8}</strong> <br />Județul: {JUD_STR}<br />SIRUTA: {SIRUTA_NUM}</p>', layer.feature.properties);
-            });
-    }).catch(err => console.error(err));
+            
+            uat = L.vectorGrid.slicer(json, {
+                minZoom: 7,
+                maxZoom: 18,  // max zoom to preserve detail on; can't be higher than 24
+                // zoomDelta: 0.5,
+                // zoomSnap: 0.5,
+                tolerance: 3, // simplification tolerance (higher means simpler)
+                extent: 4096, // tile extent (both width and height)
+                buffer: 64,   // tile buffer on each side
+                debug: 0,     // logging level (0 to disable, 1 or 2)
+                lineMetrics: false, // whether to enable line metrics tracking for LineString/MultiLineString features
+                promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
+                generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
+                indexMaxZoom: 1,       // max zoom in the initial tile index
+                indexMaxPoints: 100000, // max number of points per tile in the index
 
+                rendererFactory: L.svg.tile,
+                vectorTileLayerStyles: {
+                    sliced: function(properties, zoom) {
+                        return {
+                            fillColor: properties.color,
+                            fill: true,
+                            color: 'white',
+                            opacity: 0.1,
+                            weight: 1,
+                            fillOpacity: 1,
+                        }
+                    }
+                },
+                interactive: true,
+                getFeatureId: function(f) {
+                    return f.properties.SIRUTA_NUM;
+                }
+            
+		    })
+            .on('click', function(e) {
+                var properties = e.layer.properties;
+                var popup = L.popup()
+                    .setContent('<p><strong>'+properties.DENLOC_UTF8+'</strong> <br />Județul: '+properties.JUD_STR+'<br />SIRUTA: '+properties.SIRUTA_NUM.toString()+'</p>')
+                    .setLatLng(e.latlng)
+                    .openOn(map);
+                clearHighlightUat();              
+                highlightUat = properties.SIRUTA_NUM;
+                var style = {
+                    fillColor: properties.color,
+                    fill: true,
+                    color: 'black',
+                    opacity: 1,
+                    weight: 2,
+                    fillOpacity: 0.85,
+                };
+                uat.setFeatureStyle(properties.SIRUTA_NUM, style);
+            }).addTo(map);
+    }).catch(err => console.error(err));
     
     // https://leafletjs.com/examples/choropleth/
     
